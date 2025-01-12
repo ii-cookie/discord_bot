@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, GatewayIntentBits, WebhookClient } from 'discord.js';
+import { Client, GatewayIntentBits, Events, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -150,6 +150,7 @@ client.on('messageCreate', async (message) => {
             let instagram_sender_webhook = await message.channel.fetchWebhooks();
             const existingWebhook = instagram_sender_webhook.find(wh => wh.name === 'ddinstagram webhook');
 
+            //check if webhook alr exist
             if (!existingWebhook) {
                 // Create a new webhook if it doesn't exist
                 instagram_sender_webhook = await message.channel.createWebhook({
@@ -160,16 +161,41 @@ client.on('messageCreate', async (message) => {
                 instagram_sender_webhook = existingWebhook;
             }
 
-            console.log(message.author.displayAvatarURL());
+            // Create buttons for clicking the original link and deleting the message
+            const instagram_url_button = new ButtonBuilder()
+                .setLabel('Original Link')
+                .setStyle(ButtonStyle.Link)
+                .setURL(originalUrl); // Link button shouldn't have a customId
+
+            const delete_instagram_url_button = new ButtonBuilder()
+                .setCustomId('delete_instagram_url_button') // This button can have a customId
+                .setLabel('Delete Message')
+                .setStyle(ButtonStyle.Danger);
+
+            // Create the action row to hold the buttons 
+            const row = new ActionRowBuilder().addComponents(instagram_url_button, delete_instagram_url_button);
+
+            //send the link using webhook
             await instagram_sender_webhook.send({
                 username: message.author.username,
                 avatarURL: message.author.displayAvatarURL(),
-                content: converted_instagram_link
+                content: converted_instagram_link,
+                components: [row]
             });
         }
     } catch (error) {
         console.error('Error occurred:', error);
         await message.channel.send('An error occurred while processing your request: ' + error.message);
+    }
+});
+
+//handle button interactions
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) {
+        return;
+    }
+    if (interaction.customId === 'delete_instagram_url_button') {
+        await interaction.reply('deleting is wip');
     }
 });
 
