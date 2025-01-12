@@ -83,7 +83,7 @@ client.on('messageCreate', (message) => {
 
     //help command
     if (message.content === './help') {
-        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./igtriggerToggle: \ttoggle instagram link conversion```');
+        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./ddtriggerToggle: \ttoggle ddinstagram link conversion\n\t./vxtriggerToggle: \ttoggle vxtwitter link conversion```');
     }
 
     //simple testing
@@ -180,7 +180,7 @@ function save_instagram_enabled_guilds() {
 
 // For detecting IG trigger toggle command
 client.on('messageCreate', (message) => {
-    if (message.content === './igtriggerToggle') {
+    if (message.content === './ddtriggerToggle') {
         // Load enabled guilds from JSON file
         if (fs.existsSync(instagram_path)) {
             try {
@@ -352,7 +352,7 @@ function save_twitter_enabled_guilds() {
 
 // For detecting IG trigger toggle command
 client.on('messageCreate', (message) => {
-	if (message.content === './twittertriggerToggle') {
+	if (message.content === './vxtriggerToggle') {
     	// Load enabled guilds from JSON file
     	if (fs.existsSync(twitter_path)) {
         	try {
