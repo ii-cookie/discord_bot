@@ -78,8 +78,12 @@ client.on('messageCreate', (message) => {
         return; 
     }
 
+    //for sending bot msg to the latest sent channel
+    latest_sent_channel = message.channel;
+
+    //help command
     if (message.content === './help') {
-        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./igtriggerOn: \tenable instagram link conversion\n\t./igtriggerOff:\tdisable instagram link conversion```');
+        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./igtriggerToggle: \ttoggle instagram link conversion```');
     }
 
     //simple testing
@@ -87,7 +91,8 @@ client.on('messageCreate', (message) => {
         message.reply('pong');
     }
 
-    latest_sent_channel = message.channel;
+    
+    
 
     //unix timestamp code
     //since -1 and false is different thing, need to do the !== -1
@@ -146,9 +151,72 @@ client.on('messageCreate', (message) => {
 });
 
 
+
+
+
+
+
 //instagram link convert
+
 //create a map to store the sent link msgs
 const instagram_sent_messages = new Map();
+
+//for read and write to the json file 
+import fs from 'fs';
+
+// Path to the JSON file
+const path = './instagram_trigger_enabled_guilds.json';
+let instagram_trigger_enabled_guilds = [];
+
+// Function to save the current list of guilds back to the JSON file
+function save_instagram_enabled_guilds() {
+    try {
+        fs.writeFileSync(path, JSON.stringify({ instagram_trigger_enabled_guilds }, null, 2));
+        console.log('Updated JSON file:', { instagram_trigger_enabled_guilds });
+    } catch (error) {
+        console.error('Error saving to JSON file:', error);
+    }
+}
+
+// For detecting IG trigger toggle command
+client.on('messageCreate', (message) => {
+    if (message.content === './igtriggerToggle') {
+        // Load enabled guilds from JSON file
+        if (fs.existsSync(path)) {
+            try {
+                const data = fs.readFileSync(path, 'utf-8'); // Ensure reading as UTF-8
+                const json = JSON.parse(data);
+                instagram_trigger_enabled_guilds = json.instagram_trigger_enabled_guilds || []; // Default to empty array if undefined
+                console.log('Loaded guilds from JSON:', instagram_trigger_enabled_guilds);
+            } catch (error) {
+                console.error('Error reading JSON file:', error);
+                instagram_trigger_enabled_guilds = []; // Initialize to empty array on error
+            }
+        } else {
+            console.log('JSON file does not exist, initializing empty list.');
+            instagram_trigger_enabled_guilds = []; // Initialize to empty array
+        }
+
+        // Check if the guild ID is not in the enabled list
+        if (!instagram_trigger_enabled_guilds.includes(message.guild.id)) {
+            instagram_trigger_enabled_guilds.push(message.guild.id); // Add it to the array
+            save_instagram_enabled_guilds(); // Save it in JSON
+            message.channel.send(`Instagram trigger enabled for this server.`);
+        } else {
+            // The guild ID is in the enabled list
+            const index = instagram_trigger_enabled_guilds.indexOf(message.guild.id);
+            if (index > -1) {
+                instagram_trigger_enabled_guilds.splice(index, 1);
+                save_instagram_enabled_guilds();
+                message.channel.send(`Instagram trigger disabled for this server.`);
+            }
+        }
+    }
+});
+
+
+
+//convert instagram url trigger code 
 client.on('messageCreate', async (message) => {
 
     // Ignore bot messages
@@ -156,9 +224,19 @@ client.on('messageCreate', async (message) => {
         return; 
     }
 
+    //load the enabled guild list
+    const data = fs.readFileSync(path, 'utf-8'); // Ensure reading as UTF-8
+    const json = JSON.parse(data);
+    instagram_trigger_enabled_guilds = json.instagram_trigger_enabled_guilds || []; // Default to empty array if undefined
+
+    //if the guild do not have the trigger enabled, skip the whole code
+    if (!instagram_trigger_enabled_guilds.includes(message.guild.id)){
+        return;
+    }
     try {
         // Instagram link regex pattern
         const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
+
         const instagram_url = message.content.match(instagramUrlPattern);
 
         if (instagram_url) {  // Check if there is an Instagram URL
