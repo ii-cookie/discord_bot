@@ -128,6 +128,8 @@ client.on('messageCreate', (message) => {
 
 
 //instagram link convert
+//create a map to store the sent link msgs
+const instagram_sent_messages = new Map();
 client.on('messageCreate', async (message) => {
     try {
         // Instagram link regex pattern
@@ -136,7 +138,6 @@ client.on('messageCreate', async (message) => {
 
         if (instagram_url) {  // Check if there is an Instagram URL
             const originalUrl = instagram_url[0];
-            console.log(`Original URL: ${originalUrl}`);
 
             // Convert to ddinstagram
             let converted_instagram_link = "https://www.ddinstagram.com/";
@@ -171,17 +172,20 @@ client.on('messageCreate', async (message) => {
                 .setCustomId('delete_instagram_url_button') // This button can have a customId
                 .setLabel('Delete Message')
                 .setStyle(ButtonStyle.Danger);
+                
 
             // Create the action row to hold the buttons 
             const row = new ActionRowBuilder().addComponents(instagram_url_button, delete_instagram_url_button);
 
             //send the link using webhook
-            await instagram_sender_webhook.send({
+            const instagram_sent_message = await instagram_sender_webhook.send({
                 username: message.author.username,
                 avatarURL: message.author.displayAvatarURL(),
                 content: converted_instagram_link,
                 components: [row]
             });
+            instagram_sent_messages.set(instagram_sent_message.id + message.author.id, instagram_sent_message); // Use message ID and sender id as a key (ensure only the sender can hit delete)
+            await message.delete();
         }
     } catch (error) {
         console.error('Error occurred:', error);
@@ -195,7 +199,22 @@ client.on('interactionCreate', async (interaction) => {
         return;
     }
     if (interaction.customId === 'delete_instagram_url_button') {
-        await interaction.reply('deleting is wip');
+        //check if there is a match in the map, same as checking if the interaction user and sender is the same person
+        await interaction.deferReply({ephemeral: true });
+        if(instagram_sent_messages.has(interaction.message.id + interaction.user.id)){
+            await instagram_sent_messages.get(interaction.message.id + interaction.user.id).delete();
+            instagram_sent_messages.delete(interaction.message.id + interaction.user.id);
+            await interaction.followUp({
+                content: 'The message has been deleted.', 
+                ephemeral: true
+            })
+        }else{
+            await interaction.followUp({
+                content: 'Only the sender can delete the message.',
+                ephemeral: true
+            })
+        }
+
     }
 });
 
