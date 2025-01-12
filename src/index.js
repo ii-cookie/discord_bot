@@ -33,7 +33,8 @@ function detect_time_keywords(message_content){
         ["day", "days"],
         ["week", "weeks"],
         ["month", "months"],
-        ["year", "years"]
+        ["year", "years"],
+        ["decade", "decades"]
     ];
 
     for(let i = 0; i < keywords.length; i++){
@@ -77,6 +78,10 @@ client.on('messageCreate', (message) => {
         return; 
     }
 
+    if (message.content === './help') {
+        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./igtriggerOn: \tenable instagram link conversion\n\t./igtriggerOff:\tdisable instagram link conversion```');
+    }
+
     //simple testing
     if (message.content === 'ping') {
         message.reply('pong');
@@ -116,6 +121,9 @@ client.on('messageCreate', (message) => {
             if (time_keyword === "year"){
                 offset = number*60*60*24*365.25;
             }
+            if (time_keyword === "decade"){
+                offset = number*60*60*24*365.25*10;
+            }
 
             //calculate the target unix timestamp
             var target_unix_timestamp = 0;
@@ -142,6 +150,12 @@ client.on('messageCreate', (message) => {
 //create a map to store the sent link msgs
 const instagram_sent_messages = new Map();
 client.on('messageCreate', async (message) => {
+
+    // Ignore bot messages
+    if (message.author.bot) {
+        return; 
+    }
+
     try {
         // Instagram link regex pattern
         const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
