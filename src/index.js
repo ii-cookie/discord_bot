@@ -165,13 +165,13 @@ const instagram_sent_messages = new Map();
 import fs from 'fs';
 
 // Path to the JSON file
-const path = './instagram_trigger_enabled_guilds.json';
+const instagram_path = './instagram_trigger_enabled_guilds.json';
 let instagram_trigger_enabled_guilds = [];
 
 // Function to save the current list of guilds back to the JSON file
 function save_instagram_enabled_guilds() {
     try {
-        fs.writeFileSync(path, JSON.stringify({ instagram_trigger_enabled_guilds }, null, 2));
+        fs.writeFileSync(instagram_path, JSON.stringify({ instagram_trigger_enabled_guilds }, null, 2));
         console.log('Updated JSON file:', { instagram_trigger_enabled_guilds });
     } catch (error) {
         console.error('Error saving to JSON file:', error);
@@ -182,9 +182,9 @@ function save_instagram_enabled_guilds() {
 client.on('messageCreate', (message) => {
     if (message.content === './igtriggerToggle') {
         // Load enabled guilds from JSON file
-        if (fs.existsSync(path)) {
+        if (fs.existsSync(instagram_path)) {
             try {
-                const data = fs.readFileSync(path, 'utf-8'); // Ensure reading as UTF-8
+                const data = fs.readFileSync(instagram_path, 'utf-8'); // Ensure reading as UTF-8
                 const json = JSON.parse(data);
                 instagram_trigger_enabled_guilds = json.instagram_trigger_enabled_guilds || []; // Default to empty array if undefined
                 console.log('Loaded guilds from JSON:', instagram_trigger_enabled_guilds);
@@ -223,16 +223,21 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) {
         return; 
     }
-
-    //load the enabled guild list
-    const data = fs.readFileSync(path, 'utf-8'); // Ensure reading as UTF-8
-    const json = JSON.parse(data);
-    instagram_trigger_enabled_guilds = json.instagram_trigger_enabled_guilds || []; // Default to empty array if undefined
-
-    //if the guild do not have the trigger enabled, skip the whole code
-    if (!instagram_trigger_enabled_guilds.includes(message.guild.id)){
+    if (!fs.existsSync(instagram_path)){  //check if json file exist
         return;
+    //check if the server is in the enabled list
+    }else{
+        //load the enabled guild list
+        const data = fs.readFileSync(instagram_path, 'utf-8'); // Ensure reading as UTF-8
+        const json = JSON.parse(data);
+        instagram_trigger_enabled_guilds = json.instagram_trigger_enabled_guilds || []; // Default to empty array if undefined
+
+        //if the guild do not have the trigger enabled, skip the whole code
+        if (!instagram_trigger_enabled_guilds.includes(message.guild.id)){
+            return;
+        }        
     }
+
     try {
         // Instagram link regex pattern
         const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
@@ -320,6 +325,184 @@ client.on('interactionCreate', async (interaction) => {
 
     }
 });
+
+
+
+
+//twitter link convert
+
+//create a map to store the sent link msgs
+const twitter_sent_messages = new Map();
+
+//for read and write to the json file
+
+// Path to the JSON file
+const twitter_path = './twitter_trigger_enabled_guilds.json';
+let twitter_trigger_enabled_guilds = [];
+
+// Function to save the current list of guilds back to the JSON file
+function save_twitter_enabled_guilds() {
+	try {
+    	fs.writeFileSync(twitter_path, JSON.stringify({ twitter_trigger_enabled_guilds }, null, 2));
+    	console.log('Updated JSON file:', { twitter_trigger_enabled_guilds });
+	} catch (error) {
+    	console.error('Error saving to JSON file:', error);
+	}
+}
+
+// For detecting IG trigger toggle command
+client.on('messageCreate', (message) => {
+	if (message.content === './twittertriggerToggle') {
+    	// Load enabled guilds from JSON file
+    	if (fs.existsSync(twitter_path)) {
+        	try {
+            	const data = fs.readFileSync(twitter_path, 'utf-8'); // Ensure reading as UTF-8
+            	const json = JSON.parse(data);
+            	twitter_trigger_enabled_guilds = json.twitter_trigger_enabled_guilds || []; // Default to empty array if undefined
+            	console.log('Loaded guilds from JSON:', twitter_trigger_enabled_guilds);
+        	} catch (error) {
+            	console.error('Error reading JSON file:', error);
+            	twitter_trigger_enabled_guilds = []; // Initialize to empty array on error
+        	}
+    	} else {
+        	console.log('JSON file does not exist, initializing empty list.');
+        	twitter_trigger_enabled_guilds = []; // Initialize to empty array
+    	}
+
+    	// Check if the guild ID is not in the enabled list
+    	if (!twitter_trigger_enabled_guilds.includes(message.guild.id)) {
+        	twitter_trigger_enabled_guilds.push(message.guild.id); // Add it to the array
+        	save_twitter_enabled_guilds(); // Save it in JSON
+        	message.channel.send(`Twitter trigger enabled for this server.`);
+    	} else {
+        	// The guild ID is in the enabled list
+        	const index = twitter_trigger_enabled_guilds.indexOf(message.guild.id);
+        	if (index > -1) {
+            	twitter_trigger_enabled_guilds.splice(index, 1);
+            	save_twitter_enabled_guilds();
+            	message.channel.send(`Twitter trigger disabled for this server.`);
+        	}
+    	}
+	}
+});
+
+
+
+//convert twitter url trigger code
+client.on('messageCreate', async (message) => {
+
+	// Ignore bot messages
+	if (message.author.bot) {
+    	return;
+	}
+    if (!fs.existsSync(twitter_path)){  //check if json file exist
+        return;
+    //check if the server is in the enabled list
+    }else{
+        //load the enabled guild list
+        const data = fs.readFileSync(twitter_path, 'utf-8'); // Ensure reading as UTF-8
+        const json = JSON.parse(data);
+        twitter_trigger_enabled_guilds = json.twitter_trigger_enabled_guilds || []; // Default to empty array if undefined
+
+        //if the guild do not have the trigger enabled, skip the whole code
+        if (!twitter_trigger_enabled_guilds.includes(message.guild.id)){
+            return;
+        }        
+    }
+
+	try {
+    	// twitter link regex pattern
+    	const twitterUrlPattern = /(https?:\/\/(?:www\.)?x\.com\/[^\s]+)/g;
+
+    	const twitter_url = message.content.match(twitterUrlPattern);
+
+    	if (twitter_url) {  // Check if there is an twitter URL
+        	const originalUrl = twitter_url[0];
+
+        	// Convert to ddtwitter
+        	let converted_twitter_link = "https://www.vxtwitter.com/";
+        	const urlPart = originalUrl.split('x.com/')[1];
+        	converted_twitter_link += urlPart;
+
+        	// // Send the converted link
+        	// await message.channel.send(converted_twitter_link);
+
+        	// Check if webhook already exists
+        	let twitter_sender_webhook = await message.channel.fetchWebhooks();
+        	const existingWebhook = twitter_sender_webhook.find(wh => wh.name === 'ddtwitter webhook');
+
+        	//check if webhook alr exist
+        	if (!existingWebhook) {
+            	// Create a new webhook if it doesn't exist
+            	twitter_sender_webhook = await message.channel.createWebhook({
+                	name: 'ddtwitter webhook', // Ensure name is set correctly
+                	avatar: message.author.displayAvatarURL(), // Optionally add an avatar
+            	});
+        	} else {
+            	twitter_sender_webhook = existingWebhook;
+        	}
+
+        	// Create buttons for clicking the original link and deleting the message
+        	const twitter_url_button = new ButtonBuilder()
+            	.setLabel('Original Link')
+            	.setStyle(ButtonStyle.Link)
+            	.setURL(originalUrl); // Link button shouldn't have a customId
+
+        	const delete_twitter_url_button = new ButtonBuilder()
+            	.setCustomId('delete_twitter_url_button') // This button can have a customId
+            	.setLabel('Delete Message')
+            	.setStyle(ButtonStyle.Danger);
+           	 
+
+        	// Create the action row to hold the buttons
+        	const row = new ActionRowBuilder().addComponents(twitter_url_button, delete_twitter_url_button);
+
+        	//send the link using webhook
+        	const twitter_sent_message = await twitter_sender_webhook.send({
+            	username: message.author.username,
+            	avatarURL: message.author.displayAvatarURL(),
+            	content: converted_twitter_link,
+            	components: [row]
+        	});
+        	twitter_sent_messages.set(twitter_sent_message.id + message.author.id, twitter_sent_message); // Use message ID and sender id as a key (ensure only the sender can hit delete)
+        	await message.delete();
+    	}
+	} catch (error) {
+    	console.error('Error occurred:', error);
+    	await message.channel.send('An error occurred while processing your request: ' + error.message);
+	}
+});
+
+//handle button interactions
+client.on('interactionCreate', async (interaction) => {
+	if (!interaction.isButton()) {
+    	return;
+	}
+	if (interaction.customId === 'delete_twitter_url_button') {
+    	//check if there is a match in the map, same as checking if the interaction user and sender is the same person
+    	await interaction.deferReply({ephemeral: true });
+    	if(twitter_sent_messages.has(interaction.message.id + interaction.user.id)){
+        	await twitter_sent_messages.get(interaction.message.id + interaction.user.id).delete();
+        	twitter_sent_messages.delete(interaction.message.id + interaction.user.id);
+        	await interaction.followUp({
+            	content: 'The message has been deleted.',
+            	ephemeral: true
+        	})
+    	}else{
+        	await interaction.followUp({
+            	content: 'Only the sender can delete the message.',
+            	ephemeral: true
+        	})
+    	}
+
+	}
+});
+
+
+
+
+
+
 
 // Log in to Discord with your bot token
 client.login(process.env.TOKEN);
