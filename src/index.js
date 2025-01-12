@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, WebhookClient } from 'discord.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -123,35 +123,53 @@ client.on('messageCreate', (message) => {
     //osu timestamp code
 
 
-    //instagram link convert to ddinstagram code
-    // const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
-    // const instagram_url = message.content.match(instagramUrlPattern);
-    // console.log(instagram_url.length);
-    // if(instagram_url){  //check if there is a instagram url
-    //     let converted_instagram_link = "https://www.dd";
-    //     for(let i = 12; i < instagram_url.length - 12; i++){
-    //         converted_instagram_link += instagram_url[i];
-            
-    //     }
-    //     message.channel.send(converted_instagram_link);
-    // }
-    const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
-    const instagram_url = message.content.match(instagramUrlPattern);
+    
+});
 
-    if (instagram_url) {  // Check if there is an Instagram URL
-        // Access the first matched URL
-        const originalUrl = instagram_url[0]; 
-        console.log(`Original URL: ${originalUrl}`);
 
-        // Convert to ddinstagram 
-        let converted_instagram_link = "https://www.ddinstagram.com/";
-        
-        // append the part after "instagram.com/"
-        const urlPart = originalUrl.split('instagram.com/')[1]; // Get the part after 'instagram.com/'
-        converted_instagram_link += urlPart; // Append to the new link
+//instagram link convert
+client.on('messageCreate', async (message) => {
+    try {
+        // Instagram link regex pattern
+        const instagramUrlPattern = /(https?:\/\/(?:www\.)?instagram\.com\/[^\s]+)/g;
+        const instagram_url = message.content.match(instagramUrlPattern);
 
-        // Send the converted link
-        message.channel.send(converted_instagram_link);
+        if (instagram_url) {  // Check if there is an Instagram URL
+            const originalUrl = instagram_url[0];
+            console.log(`Original URL: ${originalUrl}`);
+
+            // Convert to ddinstagram
+            let converted_instagram_link = "https://www.ddinstagram.com/";
+            const urlPart = originalUrl.split('instagram.com/')[1];
+            converted_instagram_link += urlPart;
+
+            // // Send the converted link
+            // await message.channel.send(converted_instagram_link);
+
+            // Check if webhook already exists
+            let instagram_sender_webhook = await message.channel.fetchWebhooks();
+            const existingWebhook = instagram_sender_webhook.find(wh => wh.name === 'ddinstagram webhook');
+
+            if (!existingWebhook) {
+                // Create a new webhook if it doesn't exist
+                instagram_sender_webhook = await message.channel.createWebhook({
+                    name: 'ddinstagram webhook', // Ensure name is set correctly
+                    avatar: message.author.displayAvatarURL(), // Optionally add an avatar
+                });
+            } else {
+                instagram_sender_webhook = existingWebhook;
+            }
+
+            console.log(message.author.displayAvatarURL());
+            await instagram_sender_webhook.send({
+                username: message.author.username,
+                avatarURL: message.author.displayAvatarURL(),
+                content: converted_instagram_link
+            });
+        }
+    } catch (error) {
+        console.error('Error occurred:', error);
+        await message.channel.send('An error occurred while processing your request: ' + error.message);
     }
 });
 
