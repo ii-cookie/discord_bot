@@ -13,6 +13,16 @@ const client = new Client({
     ]
 });
 
+//send messages to the channel thru terminal
+import readline from 'readline';
+var latest_sent_channel = 1327735069925707776;
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.on('line', (input) => {
+    latest_sent_channel.send(input);
+});
 
 //function to find time keywords(seconds/minutes/hours) from a message content
 function detect_time_keywords(message_content){
@@ -72,6 +82,7 @@ client.on('messageCreate', (message) => {
         message.reply('pong');
     }
 
+    latest_sent_channel = message.channel;
 
     //unix timestamp code
     //since -1 and false is different thing, need to do the !== -1
