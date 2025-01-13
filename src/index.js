@@ -24,6 +24,59 @@ rl.on('line', (input) => {
     latest_sent_channel.send(input);
 });
 
+// Path to the JSON file
+const unix_timestamp_path = './unix_timestamp_trigger_enabled_guilds.json';
+let unix_timestamp_trigger_enabled_guilds = [];
+
+// Function to save the current list of guilds back to the JSON file
+function save_unix_timestamp_enabled_guilds() {
+	try {
+    	fs.writeFileSync(unix_timestamp_path, JSON.stringify({ unix_timestamp_trigger_enabled_guilds }, null, 2));
+    	console.log('Updated JSON file:', { unix_timestamp_trigger_enabled_guilds });
+	} catch (error) {
+    	console.error('Error saving to JSON file:', error);
+	}
+}
+
+// For detecting unix timestamp trigger toggle command
+client.on('messageCreate', (message) => {
+	if (message.content === './unixtriggerToggle') {
+    	// Load enabled guilds from JSON file
+    	if (fs.existsSync(unix_timestamp_path)) {
+        	try {
+            	const data = fs.readFileSync(unix_timestamp_path, 'utf-8'); // Ensure reading as UTF-8
+            	const json = JSON.parse(data);
+            	unix_timestamp_trigger_enabled_guilds = json.unix_timestamp_trigger_enabled_guilds || []; // Default to empty array if undefined
+            	console.log('Loaded guilds from JSON:', unix_timestamp_trigger_enabled_guilds);
+        	} catch (error) {
+            	console.error('Error reading JSON file:', error);
+            	unix_timestamp_trigger_enabled_guilds = []; // Initialize to empty array on error
+        	}
+    	} else {
+        	console.log('JSON file does not exist, initializing empty list.');
+        	unix_timestamp_trigger_enabled_guilds = []; // Initialize to empty array
+    	}
+
+    	// Check if the guild ID is not in the enabled list
+    	if (!unix_timestamp_trigger_enabled_guilds.includes(message.guild.id)) {
+        	unix_timestamp_trigger_enabled_guilds.push(message.guild.id); // Add it to the array
+        	save_unix_timestamp_enabled_guilds(); // Save it in JSON
+        	message.channel.send(`unix_timestamp trigger enabled for this server.`);
+    	} else {
+        	// The guild ID is in the enabled list
+        	const index = unix_timestamp_trigger_enabled_guilds.indexOf(message.guild.id);
+        	if (index > -1) {
+            	unix_timestamp_trigger_enabled_guilds.splice(index, 1);
+            	save_unix_timestamp_enabled_guilds();
+            	message.channel.send(`unix_timestamp trigger disabled for this server.`);
+        	}
+    	}
+	}
+});
+
+
+
+
 //function to find time keywords(seconds/minutes/hours) from a message content
 function detect_time_keywords(message_content){
     const keywords = [
@@ -83,7 +136,7 @@ client.on('messageCreate', (message) => {
 
     //help command
     if (message.content === './help') {
-        message.reply('```commands: \n\t./help:\t\t\tgives a list of commands\n\t./ddtriggerToggle: \ttoggle ddinstagram link conversion\n\t./vxtriggerToggle: \ttoggle vxtwitter link conversion```');
+        message.reply('```commands \n\t./help:\t\t\t\tgives a list of commands\n\t./ddtriggerToggle: \ttoggle ddinstagram link conversion\n\t./vxtriggerToggle: \ttoggle vxtwitter link conversion\n\t./unixtriggerToggle:   toggle unix timestamp conversion```');
     }
 
     //simple testing
@@ -91,10 +144,26 @@ client.on('messageCreate', (message) => {
         message.reply('pong');
     }
 
-    
-    
+
+
 
     //unix timestamp code
+
+	if (!fs.existsSync(unix_timestamp_path)){  //check if json file exist
+    	return;
+	//check if the server is in the enabled list
+	}else{
+    	//load the enabled guild list
+    	const data = fs.readFileSync(unix_timestamp_path, 'utf-8'); // Ensure reading as UTF-8
+    	const json = JSON.parse(data);
+    	unix_timestamp_trigger_enabled_guilds = json.unix_timestamp_trigger_enabled_guilds || []; // Default to empty array if undefined
+
+    	//if the guild do not have the trigger enabled, skip the whole code
+    	if (!unix_timestamp_trigger_enabled_guilds.includes(message.guild.id)){
+        	return;
+    	}   	 
+	}
+
     //since -1 and false is different thing, need to do the !== -1
     if ((detect_time_keywords(message.content) !== -1)&&(detect_timeframe_keywords(message.content) !== -1)){
         const number_match = message.content.match(/\d+/); //trying to find a number in the content
