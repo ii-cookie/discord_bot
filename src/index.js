@@ -567,10 +567,25 @@ client.on('interactionCreate', async (interaction) => {
 	}
 });
 
+///////////////////////////////////////////////////////////
+//slash commands
+client.on('interactionCreate', (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === 'hey') {
+        interaction.reply('hey');
+    }
+
+    if (interaction.commandName === 'ping') {
+        interaction.reply('pong!');
+    }
+});
 
 
+//////////////////////////////////////////////////////////
 
-
+import eventHandler from '../src/handlers/eventHandler.js'
+eventHandler(client);
 
 
 // Log in to Discord with your bot token
